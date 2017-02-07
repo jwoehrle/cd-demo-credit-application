@@ -1,0 +1,17 @@
+server:
+  port: 9090
+
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+management:
+	info:
+		git:
+			mode: full
+
+customerServer: http://localhost:9091/
+
+scoringServer: http://localhost:9093/
