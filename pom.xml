@@ -52,8 +52,8 @@
             <artifactId>spring-ws-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.innoq.mploed.ddd</groupId>
-            <artifactId>scoring-shared-kernel</artifactId>
+            <groupId>com.innoq.mploed.cd</groupId>
+            <artifactId>cd-scoring-shared-kernel</artifactId>
             <version>0.1.0</version>
         </dependency>
         <dependency>

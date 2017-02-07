@@ -11,6 +11,7 @@ management:
   info:
     git:
       mode: full
+      
 customerServer: http://localhost:9091/
 
 scoringServer: http://localhost:9093/
