@@ -1,4 +1,4 @@
-package com.innoq.mploed.ddd.application.integration.customer;
+package com.innoq.mploed.ddd.application.integration;
 
 import com.innoq.mploed.ddd.application.domain.Customer;
 import com.innoq.mploed.ddd.application.integration.customer.wsdl.SaveCustomerRequest;

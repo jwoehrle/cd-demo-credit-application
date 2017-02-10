@@ -4,16 +4,15 @@ import com.innoq.mploed.ddd.application.domain.CreditApplicationForm;
 import com.innoq.mploed.ddd.application.domain.Customer;
 import com.innoq.mploed.ddd.application.events.CreditApplicationApprovedEvent;
 import com.innoq.mploed.ddd.application.events.CreditApplicationDeclinedEvent;
-import com.innoq.mploed.ddd.application.integration.customer.CustomerClient;
+import com.innoq.mploed.ddd.application.events.EventPublisher;
+import com.innoq.mploed.ddd.application.integration.CustomerClient;
+import com.innoq.mploed.ddd.application.integration.ScoringClient;
 import com.innoq.mploed.ddd.application.repository.CreditApplicationFormRespository;
 import com.innoq.mploed.ddd.scoring.shared.ScoringColor;
-import com.innoq.mploed.ddd.scoring.shared.ScoringInput;
 import com.innoq.mploed.ddd.scoring.shared.ScoringResult;
-import com.innoq.mploed.ddd.scoring.shared.ScoringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,21 +29,23 @@ public class CreditApplicationController {
 
     private CustomerClient customerClient;
 
-    private ScoringService scoringService;
+    private ScoringClient scoringClient;
 
-    private RedisTemplate<String, String> redisTemplate;
+    private EventPublisher eventPublisher;
+
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CreditApplicationController.class);
 
     @Autowired
     public CreditApplicationController(CreditApplicationFormRespository creditApplicationFormRespository,
                                        CustomerClient customerClient,
-                                       ScoringService scoringService,
-                                       RedisTemplate redisTemplate) {
+                                       ScoringClient scoringClient,
+                                       EventPublisher eventPublisher) {
         this.creditApplicationFormRespository = creditApplicationFormRespository;
         this.customerClient = customerClient;
-        this.scoringService = scoringService;
-        this.redisTemplate = redisTemplate;
+        this.scoringClient = scoringClient;
+        this.eventPublisher = eventPublisher;
     }
 
     @RequestMapping(method = RequestMethod.GET)
@@ -83,28 +84,15 @@ public class CreditApplicationController {
 
         CreditApplicationForm creditApplicationForm = creditApplicationFormRespository.findOne(processContainer.getCreditApplicationForm().getId());
 
-
-        ScoringInput scoringInput = new ScoringInput();
-        scoringInput.setIncome(creditApplicationForm.getSelfDisclosure().getEarnings().sum());
-        scoringInput.setSpendings(creditApplicationForm.getSelfDisclosure().getOutgoings().sum());
-        scoringInput.setReason(creditApplicationForm.getPurpose());
-        scoringInput.setMonthlyPayment(creditApplicationForm.getMonthlyPayment().longValue());
-        scoringInput.setFirstName(processContainer.getCustomer().getFirstName());
-        scoringInput.setLastName(processContainer.getCustomer().getLastName());
-        scoringInput.setStreet(processContainer.getCustomer().getStreet());
-        scoringInput.setPostCode(processContainer.getCustomer().getPostCode());
-
-
         LOGGER.info("Remotely and synchronously calling the Scoring Application in order to perform a scoring");
-        ScoringResult scoringResult = scoringService.performScoring(scoringInput);
-
+        ScoringResult scoringResult = scoringClient.performScoring(creditApplicationForm, processContainer.getCustomer());
 
         if(scoringResult.getScoringColor().equals(ScoringColor.GREEN)) {
             LOGGER.info("Scoring was green, sending CreditApplicationApprovedEvent");
-            redisTemplate.convertAndSend("credit-application-approved-events", new CreditApplicationApprovedEvent(creditApplicationForm));
+            eventPublisher.publishEvent("credit-application-approved-events", new CreditApplicationApprovedEvent(creditApplicationForm));
         } else {
             LOGGER.info("Scoring was NOT green, sending CreditApplicationDeclinedEvent");
-            redisTemplate.convertAndSend("credit-application-declined-events", new CreditApplicationDeclinedEvent(creditApplicationForm));
+            eventPublisher.publishEvent("credit-application-declined-events", new CreditApplicationDeclinedEvent(creditApplicationForm));
         }
 
         model.addAttribute("scoringResult", scoringResult);

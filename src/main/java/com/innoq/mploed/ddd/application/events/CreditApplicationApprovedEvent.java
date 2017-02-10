@@ -4,7 +4,7 @@ import com.innoq.mploed.ddd.application.domain.CreditApplicationForm;
 
 import java.math.BigDecimal;
 
-public class CreditApplicationApprovedEvent {
+public class CreditApplicationApprovedEvent implements DomainEvent {
 
     private int term;
 
