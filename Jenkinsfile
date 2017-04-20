@@ -13,5 +13,5 @@ node {
    // Mark the code build 'stage'....
    stage 'Build'
    // Run the maven build
-   sh "${mvnHome}/bin/mvn -Dmaven.test.failure.ignore clean package"
+   sh "${mvnHome}/bin/mvn clean package"
 }
